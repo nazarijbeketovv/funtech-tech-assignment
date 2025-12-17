@@ -1,3 +1,5 @@
+"""ORM-модель outbox-событий (таблица `outbox_events`)."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -12,6 +14,8 @@ from infra.db.base import Base
 
 
 class OutboxEventModel(Base):
+    """SQLAlchemy-модель outbox-события."""
+
     __tablename__ = "outbox_events"
 
     id: Mapped[UUID] = mapped_column(

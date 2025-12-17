@@ -1,3 +1,5 @@
+"""Репозиторий заказов на SQLAlchemy."""
+
 from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
@@ -14,9 +16,19 @@ from infra.db.models import OrderModel
 
 @dataclass(slots=True, kw_only=True)
 class OrderRepositorySQLAlchemy(OrderRepositoryProtocol):
+    """SQLAlchemy-репозиторий заказов."""
+
     session: AsyncSession
 
     async def create(self, order: Order) -> Order:
+        """Создаёт заказ в БД.
+
+        Args:
+            order: Доменная сущность заказа.
+
+        Returns:
+            Order: Созданный заказ.
+        """
         model = OrderModel(
             id=order.id,
             user_id=order.user_id,
@@ -31,6 +43,14 @@ class OrderRepositorySQLAlchemy(OrderRepositoryProtocol):
         return self._to_entity_required(model)
 
     async def get_by_id(self, order_id: UUID) -> Order | None:
+        """Возвращает заказ по идентификатору.
+
+        Args:
+            order_id: Идентификатор заказа.
+
+        Returns:
+            Order | None: Заказ или `None`, если не найден.
+        """
         result = await self.session.execute(
             select(OrderModel).where(OrderModel.id == order_id)
         )
@@ -40,6 +60,15 @@ class OrderRepositorySQLAlchemy(OrderRepositoryProtocol):
     async def update_status(
         self, order_id: UUID, status: OrderStatus
     ) -> Order | None:
+        """Обновляет статус заказа.
+
+        Args:
+            order_id: Идентификатор заказа.
+            status: Новый статус.
+
+        Returns:
+            Order | None: Обновлённый заказ или `None`, если не найден.
+        """
         await self.session.execute(
             update(OrderModel)
             .where(OrderModel.id == order_id)
@@ -53,6 +82,14 @@ class OrderRepositorySQLAlchemy(OrderRepositoryProtocol):
         return self._to_entity(model)
 
     async def list_by_user(self, user_id: int) -> list[Order]:
+        """Возвращает список заказов пользователя.
+
+        Args:
+            user_id: Идентификатор пользователя.
+
+        Returns:
+            list[Order]: Список заказов.
+        """
         result = await self.session.execute(
             select(OrderModel).where(OrderModel.user_id == user_id)
         )
@@ -60,6 +97,7 @@ class OrderRepositorySQLAlchemy(OrderRepositoryProtocol):
         return [self._to_entity_required(model) for model in models]
 
     def _to_entity(self, model: OrderModel | None) -> Order | None:
+        """Преобразует ORM-модель в доменную сущность (или `None`)."""
         if model is None:
             return None
         return Order(
@@ -72,6 +110,7 @@ class OrderRepositorySQLAlchemy(OrderRepositoryProtocol):
         )
 
     def _to_entity_required(self, model: OrderModel) -> Order:
+        """Преобразует ORM-модель в доменную сущность (обязательная)."""
         return Order(
             id=model.id,
             user_id=model.user_id,
@@ -82,11 +121,13 @@ class OrderRepositorySQLAlchemy(OrderRepositoryProtocol):
         )
 
     def _ensure_list(self, items: Any) -> list[dict[str, Any]]:
+        """Гарантирует, что `items` является списком словарей."""
         if isinstance(items, list):
             return items
         return []
 
     def _ensure_decimal(self, value: Any) -> Decimal:
+        """Гарантирует, что `value` представлен как `Decimal`."""
         if isinstance(value, Decimal):
             return value
         return Decimal(str(value))

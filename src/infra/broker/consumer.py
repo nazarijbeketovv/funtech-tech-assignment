@@ -1,3 +1,10 @@
+"""Консьюмер событий `new_order` из RabbitMQ.
+
+Реализован на FastStream. После получения события:
+- выполняется простая дедупликация через Redis (ключ на сутки);
+- событие передаётся в Celery-задачу `process_order_task`.
+"""
+
 import asyncio
 import os
 from typing import Any
@@ -23,6 +30,11 @@ _redis_lock = asyncio.Lock()
 
 
 async def _get_redis() -> redis.Redis:  # type: ignore[type-arg]
+    """Ленивая инициализация Redis-клиента для дедупликации.
+
+    Returns:
+        redis.Redis: Асинхронный Redis-клиент.
+    """
     global _redis
     async with _redis_lock:
         if _redis is None:
@@ -37,6 +49,7 @@ async def _get_redis() -> redis.Redis:  # type: ignore[type-arg]
 
 @app.on_shutdown
 async def _shutdown() -> None:
+    """Корректно закрывает Redis-клиент при остановке процесса."""
     global _redis
     if _redis is None:
         return
@@ -44,12 +57,14 @@ async def _shutdown() -> None:
         await _redis.close()
         await _redis.connection_pool.disconnect()
     except Exception:
-        # Best-effort cleanup.
+        # Очистка по принципу «по возможности».
         pass
     _redis = None
 
 
 class NewOrderEvent(BaseModel):
+    """Схема события `new_order`, ожидаемого из очереди."""
+
     event: Literal["new_order"]
     order_id: UUID
     user_id: int
@@ -58,6 +73,11 @@ class NewOrderEvent(BaseModel):
 
 @broker.subscriber(RabbitQueue(queue_name, durable=True))
 async def on_new_order(payload: dict[str, Any]) -> None:
+    """Обрабатывает входящее событие `new_order`.
+
+    Args:
+        payload: Сырые данные события (обычно JSON из очереди).
+    """
     try:
         event = NewOrderEvent.model_validate(payload)
     except ValidationError:

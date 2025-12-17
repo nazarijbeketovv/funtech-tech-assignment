@@ -1,3 +1,5 @@
+"""ORM-модель пользователя (таблица `users`)."""
+
 from datetime import UTC, datetime
 
 from sqlalchemy import DateTime, String, func
@@ -7,6 +9,8 @@ from infra.db.base import Base
 
 
 class UserModel(Base):
+    """SQLAlchemy-модель пользователя."""
+
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

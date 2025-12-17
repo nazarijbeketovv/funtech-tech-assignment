@@ -1,3 +1,8 @@
+"""Публичные прикладные сценарии (use cases).
+
+Модуль реэкспортирует классы use-case для удобного импорта.
+"""
+
 from application.use_cases.create_order import CreateOrderUseCase
 from application.use_cases.get_order import GetOrderUseCase
 from application.use_cases.dispatch_outbox import DispatchOutboxUseCase

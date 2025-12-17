@@ -1,3 +1,5 @@
+"""ORM-модель заказа (таблица `orders`)."""
+
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
@@ -12,6 +14,8 @@ from infra.db.base import Base
 
 
 class OrderModel(Base):
+    """SQLAlchemy-модель заказа."""
+
     __tablename__ = "orders"
 
     id: Mapped[UUID] = mapped_column(

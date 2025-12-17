@@ -1,2 +1,1 @@
-# Alembic migrations package
-
+"""Модуль для Alembic-миграций."""

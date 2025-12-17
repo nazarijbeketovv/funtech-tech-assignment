@@ -1,29 +1,45 @@
+"""Use-case создания заказа.
+
+Сценарий:
+- создаёт заказ в БД;
+- пишет событие в outbox (для надёжной доставки);
+- кеширует заказ в Redis;
+- пытается сразу опубликовать событие `new_order` в брокер сообщений.
+"""
+
 import json
-import logging
 from dataclasses import dataclass
-from uuid import uuid4, UUID
+from uuid import UUID, uuid4
+
+from loguru import logger
 
 from application.dtos.order import CreateOrderDTO, OrderDTO
-from application.mappers import order_to_dto
 from application.interfaces.cache import CacheProtocol
-from application.interfaces.message_broker import (
-    MessageBrokerPublisherProtocol,
-)
+from application.interfaces.message_broker import MessageBrokerPublisherProtocol
 from application.interfaces.uow import UnitOfWorkProtocol
+from application.mappers import order_to_dto
 from domain.entities.outbox_event import OutboxEvent
 from domain.entities.order import Order
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True, kw_only=True)
 class CreateOrderUseCase:
+    """Сценарий создания заказа."""
+
     uow: UnitOfWorkProtocol
     cache: CacheProtocol
     message_broker: MessageBrokerPublisherProtocol
     cache_ttl: int
 
     async def __call__(self, payload: CreateOrderDTO) -> OrderDTO:
+        """Создаёт заказ и инициирует публикацию события.
+
+        Args:
+            payload: DTO с данными для создания заказа.
+
+        Returns:
+            OrderDTO: Созданный заказ в виде DTO.
+        """
         order = Order(
             id=uuid4(),
             user_id=payload.user_id,
@@ -59,15 +75,31 @@ class CreateOrderUseCase:
                 await self.uow.commit()
         except Exception as exc:
             logger.warning(
-                "Failed to publish new_order event; will retry via outbox",
+                "Не удалось опубликовать событие new_order; будет повтор через outbox",
                 extra={"error": str(exc), "event_id": str(event_id)},
             )
         return dto
 
     def _cache_key(self, order_id: UUID) -> str:
+        """Формирует ключ кеша для заказа.
+
+        Args:
+            order_id: Идентификатор заказа.
+
+        Returns:
+            str: Ключ кеша.
+        """
         return f"order:{order_id}"
 
     def _serialize(self, dto: OrderDTO) -> str:
+        """Сериализует DTO заказа в JSON-строку для кеша.
+
+        Args:
+            dto: DTO заказа.
+
+        Returns:
+            str: JSON-строка.
+        """
         return json.dumps(
             {
                 "id": str(dto.id),

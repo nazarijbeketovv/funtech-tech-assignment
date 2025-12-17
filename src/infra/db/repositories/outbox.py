@@ -1,3 +1,5 @@
+"""Репозиторий outbox-событий на SQLAlchemy."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -14,9 +16,19 @@ from infra.db.models import OutboxEventModel
 
 @dataclass(slots=True, kw_only=True)
 class OutboxRepositorySQLAlchemy(OutboxRepositoryProtocol):
+    """SQLAlchemy-репозиторий outbox-событий."""
+
     session: AsyncSession
 
     async def add(self, event: OutboxEvent) -> OutboxEvent:
+        """Добавляет событие в outbox.
+
+        Args:
+            event: Доменная сущность события.
+
+        Returns:
+            OutboxEvent: Созданное событие.
+        """
         model = OutboxEventModel(
             id=event.id,
             event_type=event.event_type,
@@ -30,6 +42,14 @@ class OutboxRepositorySQLAlchemy(OutboxRepositoryProtocol):
         return self._to_entity_required(model)
 
     async def list_pending(self, *, limit: int) -> list[OutboxEvent]:
+        """Возвращает список необработанных событий.
+
+        Args:
+            limit: Максимальное количество событий.
+
+        Returns:
+            list[OutboxEvent]: Список событий.
+        """
         result = await self.session.execute(
             select(OutboxEventModel)
             .where(OutboxEventModel.processed_at.is_(None))
@@ -41,6 +61,11 @@ class OutboxRepositorySQLAlchemy(OutboxRepositoryProtocol):
         return [self._to_entity_required(m) for m in models]
 
     async def mark_processed(self, event_id: UUID) -> None:
+        """Помечает событие как обработанное.
+
+        Args:
+            event_id: Идентификатор события.
+        """
         await self.session.execute(
             update(OutboxEventModel)
             .where(OutboxEventModel.id == event_id)
@@ -48,6 +73,7 @@ class OutboxRepositorySQLAlchemy(OutboxRepositoryProtocol):
         )
 
     def _to_entity_required(self, model: OutboxEventModel) -> OutboxEvent:
+        """Преобразует ORM-модель outbox в доменную сущность."""
         return OutboxEvent(
             id=model.id,
             event_type=model.event_type,

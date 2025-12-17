@@ -1,3 +1,9 @@
+"""Конфигурация Celery-приложения.
+
+Используется для выполнения фоновых задач и периодического запуска
+`dispatch_outbox_task` (Celery beat).
+"""
+
 import os
 
 from celery import Celery

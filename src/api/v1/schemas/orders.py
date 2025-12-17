@@ -1,3 +1,8 @@
+"""Pydantic-схемы для работы с заказами.
+
+Схемы используются для валидации входящих данных и формирования ответов API.
+"""
+
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, Annotated
@@ -9,6 +14,8 @@ from domain.value_objects.order_status import OrderStatus
 
 
 class OrderCreateSchema(BaseModel):
+    """Схема запроса на создание заказа."""
+
     items: list[dict[str, Any]] = Field(min_length=1)
     total_price: Annotated[
         Decimal,
@@ -17,10 +24,14 @@ class OrderCreateSchema(BaseModel):
 
 
 class OrderUpdateSchema(BaseModel):
+    """Схема запроса на обновление статуса заказа."""
+
     status: OrderStatus
 
 
 class OrderResponseSchema(BaseModel):
+    """Схема ответа с данными заказа."""
+
     id: UUID
     user_id: int
     items: list[dict[str, Any]]

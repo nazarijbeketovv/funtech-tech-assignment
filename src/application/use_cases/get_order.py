@@ -1,3 +1,9 @@
+"""Use-case получения заказа с кешированием.
+
+Сценарий пытается сначала отдать заказ из Redis (TTL управляется настройкой),
+а при промахе — загружает из БД и обновляет кеш.
+"""
+
 import json
 from dataclasses import dataclass
 from datetime import datetime
@@ -15,11 +21,25 @@ from domain.value_objects.order_status import OrderStatus
 
 @dataclass(slots=True, kw_only=True)
 class GetOrderUseCase:
+    """Сценарий получения заказа по идентификатору (с кешем)."""
+
     uow: UnitOfWorkProtocol
     cache: CacheProtocol
     cache_ttl: int
 
     async def __call__(self, order_id: UUID, *, user_id: int) -> OrderDTO:
+        """Возвращает заказ по `order_id`, проверяя владельца.
+
+        Args:
+            order_id: Идентификатор заказа.
+            user_id: Идентификатор пользователя, запрашивающего заказ.
+
+        Returns:
+            OrderDTO: DTO заказа.
+
+        Raises:
+            OrderNotFoundError: Если заказ не найден или недоступен пользователю.
+        """
         cache_key = self._cache_key(order_id)
         cached = await self.cache.get(cache_key)
         if cached:
@@ -33,7 +53,7 @@ class GetOrderUseCase:
         async with self.uow:
             order = await self.uow.order_repo.get_by_id(order_id)
         if order is None:
-            raise OrderNotFoundError("Order not found")
+            raise OrderNotFoundError("Заказ не найден")
 
         dto = order_to_dto(order)
         self._ensure_owner(dto, user_id=user_id)
@@ -41,9 +61,25 @@ class GetOrderUseCase:
         return dto
 
     def _cache_key(self, order_id: UUID) -> str:
+        """Формирует ключ кеша для заказа.
+
+        Args:
+            order_id: Идентификатор заказа.
+
+        Returns:
+            str: Ключ кеша.
+        """
         return f"order:{order_id}"
 
     def _serialize(self, dto: OrderDTO) -> str:
+        """Сериализует DTO заказа в JSON-строку для кеша.
+
+        Args:
+            dto: DTO заказа.
+
+        Returns:
+            str: JSON-строка.
+        """
         return json.dumps(
             {
                 "id": str(dto.id),
@@ -56,6 +92,14 @@ class GetOrderUseCase:
         )
 
     def _deserialize(self, data: str) -> OrderDTO:
+        """Десериализует JSON-строку из кеша в DTO заказа.
+
+        Args:
+            data: JSON-строка.
+
+        Returns:
+            OrderDTO: DTO заказа.
+        """
         raw = json.loads(data)
         return OrderDTO(
             id=UUID(raw["id"]),
@@ -68,5 +112,14 @@ class GetOrderUseCase:
 
     @staticmethod
     def _ensure_owner(dto: OrderDTO, *, user_id: int) -> None:
+        """Проверяет, что заказ принадлежит пользователю.
+
+        Args:
+            dto: DTO заказа.
+            user_id: Идентификатор пользователя.
+
+        Raises:
+            OrderNotFoundError: Если заказ принадлежит другому пользователю.
+        """
         if dto.user_id != user_id:
-            raise OrderNotFoundError("Order not found")
+            raise OrderNotFoundError("Заказ не найден")

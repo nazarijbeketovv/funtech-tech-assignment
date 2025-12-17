@@ -1,17 +1,25 @@
-class ApplicationError(Exception): ...
+"""Исключения прикладного (application) слоя.
+
+Содержит ошибки, которые отражают бизнес-сценарии и используются для
+преобразования в корректные HTTP-ответы на уровне API.
+"""
+
+
+class ApplicationError(Exception):
+    """Базовая ошибка прикладного слоя."""
 
 
 class UserAlreadyExistsError(ApplicationError):
-    pass
+    """Пользователь с указанным email уже существует."""
 
 
 class InvalidCredentialsError(ApplicationError):
-    pass
+    """Неверные учётные данные или невалидный токен."""
 
 
 class OrderNotFoundError(ApplicationError):
-    pass
+    """Заказ не найден (либо недоступен пользователю)."""
 
 
 class UnauthorizedError(ApplicationError):
-    pass
+    """Пользователь не имеет прав на выполнение действия."""

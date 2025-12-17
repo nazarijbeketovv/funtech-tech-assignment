@@ -1,4 +1,13 @@
-class DomainValidationError(ValueError): ...
+"""Доменные исключения.
+
+Исключения этого модуля описывают ошибки, возникающие при нарушении доменных
+инвариантов и бизнес-правил.
+"""
 
 
-class DomainNotFoundError(LookupError): ...
+class DomainValidationError(ValueError):
+    """Ошибка валидации доменной модели (нарушение инвариантов)."""
+
+
+class DomainNotFoundError(LookupError):
+    """Сущность не найдена на уровне домена."""

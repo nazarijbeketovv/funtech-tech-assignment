@@ -1,6 +1,14 @@
+"""Фоновые задачи Celery.
+
+Содержит:
+- `process_order_task` — имитация обработки заказа;
+- `dispatch_outbox_task` — отправка outbox-событий в брокер.
+"""
+
 import asyncio
 import time
 
+from loguru import logger
 
 from application.use_cases.dispatch_outbox import DispatchOutboxUseCase
 from config.settings import settings
@@ -17,14 +25,34 @@ from infra.tasks.celery_app import celery_app
 
 @celery_app.task(name="order_service.process_order_task")
 def process_order_task(order_id: str) -> str:
+    """Имитирует обработку заказа.
+
+    В рамках тестового задания выполняется задержка ~2 секунды и запись в stdout.
+
+    Args:
+        order_id: Идентификатор заказа (UUID в строковом виде).
+
+    Returns:
+        str: Тот же идентификатор заказа.
+    """
     time.sleep(2)
-    print(f"Order {order_id} processed")
+    logger.info("Заказ обработан", extra={"order_id": order_id})
     return order_id
 
 
 @celery_app.task(name="order_service.dispatch_outbox_task")
 def dispatch_outbox_task() -> int:
+    """Публикует pending-события outbox в брокер сообщений.
+
+    Создаёт временные инфраструктурные зависимости (движок БД, репозитории,
+    publisher) и запускает `DispatchOutboxUseCase` в отдельном event loop.
+
+    Returns:
+        int: Количество обработанных событий.
+    """
+
     async def _run() -> int:
+        """Асинхронная обёртка для запуска outbox-dispatch внутри Celery."""
         engine = create_engine(settings.database_url, is_echo=False)
         factory = get_session_factory(engine)
         publisher = RabbitPublisher(
@@ -35,7 +63,6 @@ def dispatch_outbox_task() -> int:
         )
         try:
             async with factory() as session:
-                session = session  # type: AsyncSession
                 uow = UnitOfWorkSQLAlchemy(
                     session=session,
                     user_repo=UserRepositorySQLAlchemy(session=session),

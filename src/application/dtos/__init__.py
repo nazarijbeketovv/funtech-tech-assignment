@@ -1,3 +1,8 @@
+"""Публичные DTO прикладного слоя.
+
+Модуль реэкспортирует DTO для удобства импорта из `application.dtos`.
+"""
+
 from application.dtos.auth import TokenDTO, TokenDataDTO
 from application.dtos.order import CreateOrderDTO, OrderDTO, UpdateOrderStatusDTO
 from application.dtos.user import UserCreateDTO, UserDTO

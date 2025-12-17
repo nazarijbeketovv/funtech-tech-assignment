@@ -1,8 +1,12 @@
+"""Настройки Redis (кеш и инфраструктурные параметры)."""
+
 from pydantic import Field, RedisDsn
 from pydantic_settings import BaseSettings
 
 
 class RedisSettings(BaseSettings):
+    """Настройки подключения к Redis и параметров кеширования."""
+
     redis_url: RedisDsn = Field(
         RedisDsn("redis://:redis_password@redis:6379/0"), alias="REDIS_URL"
     )
@@ -14,6 +18,8 @@ class RedisSettings(BaseSettings):
     redis_cache_prefix: str = Field("order_service:", alias="REDIS_CACHE_PREFIX")
 
     class Config:
+        """Настройки загрузки переменных окружения для Pydantic Settings."""
+
         env_file = ".env"
         env_file_encoding = "utf-8"
         extra = "ignore"

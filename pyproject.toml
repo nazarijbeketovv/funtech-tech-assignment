@@ -5,17 +5,19 @@ description = "Order management service built on FastAPI with clean architecture
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "alembic==1.17.2",
+    "alembic>=1.17.2",
     "asyncpg==0.31.0",
     "celery==5.6.0",
     "dishka==1.7.2",
     "email-validator==2.3.0",
     "fastapi==0.124.4",
     "fastapi-limiter>=0.1.6",
-    "faststream[rabbit]==0.6.4",
+    "faststream[cli,rabbit]==0.6.4",
     "granian==2.6.0",
     "greenlet==3.3.0",
+    "gunicorn>=23.0.0",
     "httpx==0.28.1",
+    "loguru==0.7.3",
     "passlib[bcrypt]==1.7.4",
     "pydantic==2.12.5",
     "pydantic-settings==2.12.0",
@@ -23,7 +25,6 @@ dependencies = [
     "python-multipart==0.0.20",
     "redis==7.1.0",
     "sqlalchemy[asyncio]==2.0.45",
-    "structlog==25.5.0",
     "tenacity==9.1.2",
     "uvicorn[standard]==0.38.0",
 ]
@@ -70,26 +71,35 @@ line-length = 82
 
 [tool.ruff.lint]
 select = [
-    "A", # prevent using keywords that clobber python builtins
-    "B", # bugbear: security warnings
-    "E", # pycodestyle
-    "F", # pyflakes
-    "ISC", # implicit string concatenation
-    "UP", # alert you when better syntax is available in your python version
-    "RUF", # the ruff developer's own rules
+    "A",
+    "B",
+    "E",
+    "D",
+    "ASYNC",
+    "F",
+    "ISC",
+    "UP",
+    "RUF",
 ]
 
 ignore = [
-    "E712", # Allow using if x == False, as it's not always equivalent to if x.
-    "E501", # Supress line-too-long warnings: trust black's judgement on this one.
-    "A003", # Allow shawoding class attribute: django uses id.
-    "B904", # Allow unchained exceptions: it's fine to raise 404 in django.
+    "E712",
+    "E501",
+    "A003",
+    "B904",
     "B008",
+    "RUF002",
+    "RUF001",
+    "D415",
 ]
 
 fixable = [
-    "F401", # Remove unused imports.
-    "NPY001", # Fix numpy types, which are removed in 1.24.
-    "RUF100", # Remove unused noqa comments.
+    "F401",
+    "NPY001",
+    "RUF100",
+    "UP007",
+    "UP035",
 ]
 
+[tool.ruff.lint.pydocstyle]
+convention = "google"

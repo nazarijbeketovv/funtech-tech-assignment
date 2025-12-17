@@ -1,3 +1,5 @@
+"""Интеграция с Celery и фоновые задачи."""
+
 from infra.tasks.celery_app import celery_app
 from infra.tasks.tasks import process_order_task
 
